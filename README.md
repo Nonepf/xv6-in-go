@@ -1,2 +1,9 @@
-# xv6-in-go
-An xv6-like operating system implemented in Go for the RISC-V architecture.
+# 项目背景
+
+在学完 MIT 6.S081 的课程后，总想自己从头到尾实现一个操作系统，加深自己对系统的理解。本来最初打算在 x64-86 平台上复刻 xv6，不过似乎有点缺乏挑战性。又由于受到 [Biscuit](https://pdos.csail.mit.edu/6.828/2020/readings/biscuit.pdf) 这个系统设计想法的启发，于是打算使用Go语言来复现一下。
+
+期末周期间，我简单地学习了一下Go语言的语法与特色功能，打算在寒假期间把一个基本的系统框架弄出来。
+
+# 补充
+
+整个系统的实现记录在 [Logs.md](Logs.md) 这个文件之中。
