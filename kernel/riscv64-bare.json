@@ -1,0 +1,11 @@
+{
+    "llvm-target": "riscv64-unknown-elf",
+    "cpu": "generic-rv64",
+    "features": "+m,+a,+c",
+    "os": "none",
+    "rt": "none",
+    "gc": "none",
+    "scheduler": "none",
+    "code-model": "medium",
+    "abis": ["lp64"]
+}
