@@ -12,6 +12,11 @@ func printInt(num int) {
 	// Int in Go ranges from -9,223,372,036,854,775,808
 	//					 to   9,223,372,036,854,775,807.
 	// We need roughly 20 bytes to store it.
+	if (num == 0) {
+		uart_putc('0')
+		return
+	}
+
 	var buf	[20]byte
 	i := 0
 	

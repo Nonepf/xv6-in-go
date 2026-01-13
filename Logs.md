@@ -114,3 +114,95 @@ func KMain() {
 	Hello there
 	Today is Monday
 	, M 9 100 %x
+
+## Log 03: kalloc
+### 实验目标
+- 使用分页管理物理内存
+
+### 设计思路与细节
+这次新增功能高度参考了xv6系统的 `kalloc.c` 文件。
+
+在具体实施之前，我考虑过能否直接用Go内部的内存管理来实现。但这是一个我并不熟悉的道路，而且与xv6的设计相距有点远，因此还是选择了我最熟悉的这条道路。
+
+具体实施时，除去Go语言语法上的一些问题，最麻烦的是如何让Go读取到`kernel.ld`中的变量。
+
+曾经尝试过这样的方法：
+```go
+//go:linkname bottom _bss_end
+var bottom uintptr
+```
+不过似乎并不能正确地读取到该字段，并在反复修改`kernel.ld`后无果，遂采用临时方案：
+```go
+const (
+    BSS_END   = uintptr(0x80021000)
+    PHYSTOP   = uintptr(0x88000000)
+)
+```
+现在暂时先这样，后面会考虑替换掉。
+
+### 其他细节
+
+- 之前我们的`printfInt`函数有误，需要判断数是否为`0`.
+
+- `kalloc.go`实现的函数如下：
+```go
+func kinit()
+func freerange(pa_start uintptr, pa_end uintptr)
+func kalloc() uintptr
+func kfree(pa uintptr)
+```
+
+### 实验效果
+我将 `main.go` 文件分成了几个测试板块，方便模块化测试，如下：
+```go
+func KMain() {
+	printfTest()
+	kallocTest()
+    for {}
+}
+
+func printfTest() {
+	printf("--- printf test ---\n")
+	printInt(2147483647)
+	uart_putc('\n')
+	printString("Hello there")
+	uart_putc('\n')
+	t := 1
+	printf("Today is %s \n, %c %d %d %x\n", "Monday", 'M', t, 2)
+}
+
+func kallocTest() {
+	printf("--- kalloc test ---\n")
+
+	printf("init kmem... ")
+	kinit()
+	printf("OK\n")
+
+	printf("test kalloc\n")
+	count := 0
+	for kalloc() != 0 {
+		count++
+	}
+	printf("allocate %d KB memory\n", int(count * 4))
+
+}
+```
+
+输出如下：
+
+	C OK
+	--- printf test ---
+	2147483647
+	Hello there
+	Today is Monday
+	, M 1 2 %x
+	--- kalloc test ---
+	init kmem... kinit: [2147618816, 2281701376)
+	freerange: [2147618816, 2281701376)
+	OK
+	test kalloc
+	allocate 130940 KB memory
+
+### 后续完善
+- 完成自旋锁机制
+- 替换当前的`bottom`, `top`设计，改用更加结构化的设计

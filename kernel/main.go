@@ -4,17 +4,35 @@ import _ "unsafe"
 
 //export KMain
 func KMain() {
-	msg := "RPF: Hello, world!"
-	for _, c := range msg {
-		uart_putc(byte(c))
-	}
-	uart_putc('\n')
+	printfTest()
+	kallocTest()
+    for {}
+}
+
+func printfTest() {
+	printf("--- printf test ---\n")
 	printInt(2147483647)
 	uart_putc('\n')
 	printString("Hello there")
 	uart_putc('\n')
-	printf("Today is %s \n, %c %d %d %x", "Monday", 'M', 9, 100)
-    for {}
+	t := 1
+	printf("Today is %s \n, %c %d %d %x\n", "Monday", 'M', t, 2)
+}
+
+func kallocTest() {
+	printf("--- kalloc test ---\n")
+
+	printf("init kmem... ")
+	kinit()
+	printf("OK\n")
+
+	printf("test kalloc\n")
+	count := 0
+	for kalloc() != 0 {
+		count++
+	}
+	printf("allocate %d KB memory\n", int(count * 4))
+
 }
 
 func main() {}

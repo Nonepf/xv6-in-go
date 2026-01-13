@@ -31,7 +31,7 @@ $(BUILD_DIR)/init.o: src/init.c | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # compile Go kernel
-$(BUILD_DIR)/main.o: kernel/main.go kernel/printf.go | $(BUILD_DIR)
+$(BUILD_DIR)/main.o: kernel/main.go kernel/printf.go kernel/kalloc.go | $(BUILD_DIR)
 	$(TINYGO) build $(TINYGO_FLAGS) -o $@ ./kernel/
 
 # link

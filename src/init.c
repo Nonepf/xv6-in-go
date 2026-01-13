@@ -3,12 +3,14 @@
 
 typedef long int ssize_t;
 
+// basic IO
 // basic output
 void uart_putc(char c) {
     volatile uint8_t *uart = (uint8_t *)0x10000000;
     *uart = c;
 }
 
+// runtime support
 // allocate a 64KB heap for go runtime, make sure it can work
 static uint8_t go_heap[64 * 1024];
 uintptr_t runtime_heapMaxSize = (uintptr_t)sizeof(go_heap);
