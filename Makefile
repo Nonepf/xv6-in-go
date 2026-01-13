@@ -9,7 +9,7 @@ BUILD_DIR = build
 
 # settings
 CFLAGS = -march=rv64imac -mabi=lp64 -mcmodel=medany -ffreestanding -nostdlib -O2
-TINYGO_FLAGS = -target=./kernel/riscv64-bare.json
+TINYGO_FLAGS = -target=./scripts/riscv64-bare.json
 
 # object files
 OBJS = $(BUILD_DIR)/entry.o \
@@ -27,16 +27,16 @@ $(BUILD_DIR)/entry.o: kernel/entry.S | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # compile init.c
-$(BUILD_DIR)/init.o: kernel/init.c | $(BUILD_DIR)
+$(BUILD_DIR)/init.o: src/init.c | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # compile Go kernel
-$(BUILD_DIR)/main.o: kernel/main.go | $(BUILD_DIR)
-	$(TINYGO) build $(TINYGO_FLAGS) -o $@ ./kernel/main.go
+$(BUILD_DIR)/main.o: kernel/main.go kernel/printf.go | $(BUILD_DIR)
+	$(TINYGO) build $(TINYGO_FLAGS) -o $@ ./kernel/
 
 # link
-$(TARGET): $(OBJS) kernel/kernel.ld
-	$(LD) -T kernel/kernel.ld -o $(TARGET) $(OBJS) \
+$(TARGET): $(OBJS) scripts/kernel.ld
+	$(LD) -T scripts/kernel.ld -o $(TARGET) $(OBJS) \
 		--gc-sections \
 		--allow-multiple-definition
 

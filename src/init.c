@@ -1,6 +1,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
+typedef long int ssize_t;
+
 // basic output
 void uart_putc(char c) {
     volatile uint8_t *uart = (uint8_t *)0x10000000;
@@ -33,4 +35,16 @@ void c_start() {
     uart_putc('C'); uart_putc(' '); uart_putc('O'); uart_putc('K'); uart_putc('\n');
     
     KMain();
+}
+
+// abort
+void abort() { 
+    uart_putc('p'); uart_putc('a'); uart_putc('n'); uart_putc('i'); uart_putc('c'); uart_putc('\n');
+    while(1); 
+}
+
+ssize_t write(int fd, const void *buf, size_t count) {
+    for(size_t i = 0; i < count; i++) 
+        uart_putc(((char*)buf)[i]);
+    return count;
 }
