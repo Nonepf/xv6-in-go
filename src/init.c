@@ -3,6 +3,10 @@
 
 typedef long int ssize_t;
 
+// constants in kernel.ld
+extern char end[];
+uintptr_t get_end(void) { return (uintptr_t)end; }
+
 // basic IO
 // basic output
 void uart_putc(char c) {

@@ -2,10 +2,8 @@ package main
 
 import "unsafe"
 
-const (
-    BSS_END   = uintptr(0x80021000)
-    PHYSTOP   = uintptr(0x88000000)
-)
+//go:linkname get_end get_end
+func get_end() uintptr
 
 const PGSIZE = 4096
 
@@ -22,6 +20,7 @@ var kmem Kmem
 
 func kinit() {
 	// initlock(&kmem.lock, "kmem")
+	var BSS_END uintptr = get_end()
 	printf("kinit: [%d, %d)\n", int(BSS_END), int(PHYSTOP))
 	freerange(BSS_END, PHYSTOP)
 }
@@ -36,6 +35,7 @@ func freerange(pa_start uintptr, pa_end uintptr) {
 func kfree(pa uintptr) {
 	// kmem.lock.acquire()
 	// defer kmem.lock.acquire()
+	var BSS_END uintptr = get_end()
 
 	if pa % PGSIZE != 0 || pa < BSS_END || pa >= PHYSTOP {
 		printf("panic: kfree")
