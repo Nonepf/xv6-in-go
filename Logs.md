@@ -216,3 +216,126 @@ func kallocTest() {
 - 所有地址用 `uintptr` 类型，但注意Go没有隐式类型转换，在定义一些运算时需小心
 - `const`定义的数值不占用实际空间，和C的宏定义很像
 - 尽量不要在全局就给变量赋值（如本次修改`kalloc.go`时发现在全局给`BSS_END`赋值会导致其值为`0`）
+
+## Log 05: page tables
+### 实验目标
+- 简单实现操作系统的三级页表机制
+
+### 实验设计
+这个阶段我们只负责页表的初始化与创建，因此只实现下面这几个函数
+
+| 函数            | 作用                  |
+| ------------- | ------------------- |
+| `walk`        | 模拟MMU遍历页表，为后面操作的基石  |
+| `mappages`    | 将一段连续的虚拟地址映射到一段物理地址 |
+| `kvmmap`      | 内核页表的初始化            |
+| `kvminit`     | 全局初始化               |
+| `kvminithart` | 开启MMU               |
+
+### 实现细节
+为了方便调试，我为`printf`函数设计了`%x`格式的输出，如下：
+```go
+func printHex(val uintptr) {
+	if val == 0 {
+		uart_putc('0')
+		return
+	}
+
+	var buf [16]byte
+	i := 15
+	chars := "0123456789abcdef"
+
+	for val > 0 && i >= 0 {
+		buf[i] = chars[val%16]
+		val /= 16
+		i--
+	}
+
+	uart_putc('0')
+	uart_putc('x')
+	for j := i + 1; j < 16; j++ {
+		uart_putc(buf[j])
+	}
+}
+```
+
+在实际操作了，我还定义了大量的类似xv6中宏的函数：
+```go
+func PX(level int, va uintptr) uintptr { return (va >> (12 + uintptr(level)*9)) & 0x1FF }
+func PTE2PA(pte pte_t) uintptr { return (uintptr(pte) >> 10) << 12 }
+func PA2PTE(pa uintptr) pte_t { return pte_t((pa >> 12) << 10) }
+
+func PGGROUNDDOWN(a uintptr) uintptr { return a & ^(PGSIZE - 1) }
+```
+
+以及内存管理的辅助函数：
+```go
+func memset(dst uintptr, c int, n uint)
+```
+
+至于关键函数`kvminithart`与`walk`的实现，见下一小节。
+
+### 实现难点
+主要的一个难点（或者说需要斟酌的点）是如何权衡硬件，C与Go。
+
+在实现`kvminithart`时，发现Go不能直接使用内联汇编，需要在`init.c`中代替其实现。但`init.c`又需要Go代码中`kernel_pagetable`的具体值，我尝试过在`vm.go`中使用`\\export`，不过没有效果，最后还是在C中定义了内核页表，在`vm.go`中使用它。
+
+另外，Go语言严格的类型检查也常常导致编译错误（尤其是Go没有C中的隐式`bool`类型转换），以后应多加注意。
+
+对于`walk`，其实实现原理与xv6中相同，如下：
+```go
+func walk(pagetable pagetable_t, va uintptr, alloc bool) *pte_t {
+	if va >= MAXVA {
+		panic("walk")
+	}
+
+	for level := 2; level > 0; level-- {
+		idx := PX(level, va)
+		pte_ptr := (*pte_t)(unsafe.Pointer(uintptr(pagetable) + idx*8))
+	
+		if (*pte_ptr & PTE_V) != 0 {
+			pagetable = pagetable_t(PTE2PA(*pte_ptr))
+		} else {
+			if !alloc {
+				return nil
+			}
+
+			new_page := kalloc()
+			if new_page == 0 {
+				return nil
+			}
+
+			memset(new_page, 0, uint(PGSIZE))
+
+			*pte_ptr = PA2PTE(new_page) | PTE_V
+			pagetable = pagetable_t(new_page)
+		}
+	}
+
+	idx0 := PX(0, va)
+	return (*pte_t)(unsafe.Pointer(uintptr(pagetable) + idx0*8))
+}
+```
+
+### 实验效果
+
+	C OK
+	kmeminit... kinit: [2147618816, 2281701376)
+	freerange: [2147618816, 2281701376)
+	OK
+	kvminit...  kernel_pagetable at 0x87fff000
+	mappages 0x10000000, 0x10000000
+	mappages 0x10001000, 0x10001000
+	mappages 0xc000000, 0xc000000
+	mappages 0x80000000, 0x80000000
+	mappages 0x80001000, 0x80001000
+	OK
+	kvminithart...  OK
+	--- printf test ---
+	2147483647
+	Hello there
+	Today is Monday
+	, M 1 2
+	--- kalloc test ---
+	test kalloc
+	allocate 130660 KB memory

@@ -4,6 +4,18 @@ import _ "unsafe"
 
 //export KMain
 func KMain() {
+	printf("kmeminit... ")
+	kinit()
+	printf("OK\n")
+
+	printf("kvminit...  ")
+	kvminit()
+	printf("OK\n")
+
+	printf("kvminithart...  ")
+	kvminithart()
+	printf("OK\n")
+
 	printfTest()
 	kallocTest()
     for {}
@@ -16,15 +28,11 @@ func printfTest() {
 	printString("Hello there")
 	uart_putc('\n')
 	t := 1
-	printf("Today is %s \n, %c %d %d %x\n", "Monday", 'M', t, 2)
+	printf("Today is %s \n, %c %d %d\n", "Monday", 'M', t, 2)
 }
 
 func kallocTest() {
 	printf("--- kalloc test ---\n")
-
-	printf("init kmem... ")
-	kinit()
-	printf("OK\n")
 
 	printf("test kalloc\n")
 	count := 0

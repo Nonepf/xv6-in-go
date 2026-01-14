@@ -8,7 +8,7 @@ TARGET = kernel-qemu
 BUILD_DIR = build
 
 # settings
-CFLAGS = -march=rv64imac -mabi=lp64 -mcmodel=medany -ffreestanding -nostdlib -O2
+CFLAGS = -march=rv64imac_zicsr -mabi=lp64 -mcmodel=medany -ffreestanding -nostdlib -O2 
 TINYGO_FLAGS = -target=./scripts/riscv64-bare.json
 
 # object files
@@ -31,8 +31,10 @@ $(BUILD_DIR)/init.o: src/init.c | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # compile Go kernel
-$(BUILD_DIR)/main.o: kernel/main.go kernel/printf.go kernel/kalloc.go kernel/memlayout.go | $(BUILD_DIR)
+$(BUILD_DIR)/main.o: FORCE | $(BUILD_DIR)
 	$(TINYGO) build $(TINYGO_FLAGS) -o $@ ./kernel/
+
+.PHONY: FORCE
 
 # link
 $(TARGET): $(OBJS) scripts/kernel.ld

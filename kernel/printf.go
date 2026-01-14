@@ -42,6 +42,29 @@ func printString(str string) {
 	}
 }
 
+func printHex(val uintptr) {
+	if val == 0 {
+		uart_putc('0')
+		return
+	}
+
+	var buf [16]byte
+	i := 15
+	chars := "0123456789abcdef"
+
+	for val > 0 && i >= 0 {
+		buf[i] = chars[val%16]
+		val /= 16
+		i--
+	}
+
+	uart_putc('0')
+	uart_putc('x')
+	for j := i + 1; j < 16; j++ {
+		uart_putc(buf[j])
+	}
+}
+
 func printf(format string, args ...interface{}) {
 	argIdx := 0
 	for i := 0; i < len(format); i++ {
@@ -63,6 +86,9 @@ func printf(format string, args ...interface{}) {
 				default:
 					uart_putc('?')
 				}
+				argIdx++
+			case 'x':
+				printHex(args[argIdx].(uintptr))
 				argIdx++
 			default:
 				uart_putc('%')

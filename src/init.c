@@ -7,6 +7,9 @@ typedef long int ssize_t;
 extern char end[];
 uintptr_t get_end(void) { return (uintptr_t)end; }
 
+extern char etext[];
+uintptr_t get_etext(void) { return (uintptr_t)etext; }
+
 // basic IO
 // basic output
 void uart_putc(char c) {
@@ -45,7 +48,6 @@ void c_start() {
 
 // abort
 void abort() { 
-    uart_putc('p'); uart_putc('a'); uart_putc('n'); uart_putc('i'); uart_putc('c'); uart_putc('\n');
     while(1); 
 }
 
@@ -53,4 +55,14 @@ ssize_t write(int fd, const void *buf, size_t count) {
     for(size_t i = 0; i < count; i++) 
         uart_putc(((char*)buf)[i]);
     return count;
+}
+
+//vm support
+unsigned long kernel_pagetable;
+
+void kvminithart() {
+    // Sv39 mode + Physical Page Number
+    uint64_t x = (8L << 60) | (((uint64_t)kernel_pagetable) >> 12);
+    asm volatile("csrw satp, %0" : : "r" (x));
+    asm volatile("sfence.vma zero, zero");
 }

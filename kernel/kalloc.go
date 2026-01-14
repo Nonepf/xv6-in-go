@@ -5,8 +5,6 @@ import "unsafe"
 //go:linkname get_end get_end
 func get_end() uintptr
 
-const PGSIZE = 4096
-
 type run struct {
 	next *run
 }
@@ -38,8 +36,7 @@ func kfree(pa uintptr) {
 	var BSS_END uintptr = get_end()
 
 	if pa % PGSIZE != 0 || pa < BSS_END || pa >= PHYSTOP {
-		printf("panic: kfree")
-		for {}
+		panic("kfree")
 	}
 
 	r := (*run)(unsafe.Pointer(pa))

@@ -7,13 +7,12 @@ SECTIONS {
    .text : {
         *(.text .text.*)
         . = ALIGN(4096);
+        etext = .;
     }
 
     .bss : {
-        _bss_start = .;
         *(.bss .bss.*)
         . = ALIGN(4096);
-        _bss_end = .;
         end = .;
     }
 }
