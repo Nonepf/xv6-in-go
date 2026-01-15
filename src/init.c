@@ -79,7 +79,7 @@ ssize_t write(int fd, const void *buf, size_t count) {
 //vm support
 unsigned long kernel_pagetable;
 
-void kvminithart() {
+void kvminithart(uint64_t kernel_pagetable) {
     // Sv39 mode + Physical Page Number
     uint64_t x = SATP_SV39 | (((uint64_t)kernel_pagetable) >> 12);
     w_satp(x);

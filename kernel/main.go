@@ -13,7 +13,7 @@ func KMain() {
 	printf("OK\n")
 
 	printf("kvminithart...  ")
-	kvminithart()
+	kvminithart(kernel_pagetable)
 	printf("OK\n")
 
 	printfTest()

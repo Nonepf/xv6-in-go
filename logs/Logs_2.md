@@ -77,3 +77,40 @@ target remote localhost:1234
 ```
 
 然后就可以了。
+
+---
+## Log 07: 页表问题修复
+### 问题描述
+- 系统启动卡在了开启页表映射一环，说明页表映射存在问题。
+
+### 问题解决
+
+用gdb定位，发现问题在这里：
+
+    (gdb) stepi
+    sfence_vma () at src/riscv.h:339
+    339       asm volatile("sfence.vma zero, zero");
+    (gdb) stepi
+    Cannot access memory at address 0x80000b5e
+
+但这个地址确实在我的映射范围之内啊
+
+    mappages 0x80000000, 0x80000000
+    mappages 0x80001000, 0x80001000
+
+我们进一步追溯到问题根源：
+
+    Breakpoint 1, kvminithart () at src/riscv.h:214
+    214       asm volatile("csrw satp, %0" : : "r" (x));
+    (gdb) p/x x
+    $1 = 0x8000000000000000
+    (gdb) p/x kernel_pagetable
+    $2 = 0x0
+
+Go中定义的kernel_pagetable的值似乎并没有同步到C中！
+
+既然external声明不靠谱，我们用显式传参来传入kernel_pagetable值。之后，我们成功进入了系统：
+
+    C OK
+    ......
+    allocate 130660 KB memory

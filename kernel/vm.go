@@ -22,7 +22,7 @@ func kvminit() {
 }
 
 //go:linkname kvminithart kvminithart
-func kvminithart()
+func kvminithart(kernel_pagetable pagetable_t)
 
 func walk(pagetable pagetable_t, va uintptr, alloc bool) *pte_t {
 	if va >= MAXVA {
@@ -74,7 +74,7 @@ func mappages(pagetable pagetable_t, va uintptr, size uintptr, pa uintptr, perm 
 		if *pte & PTE_V != 0 {
 			panic("remap")
 		}
-		*pte = PA2PTE(pa) | pte_t(perm | PTE_V)
+		*pte = PA2PTE(pa) | pte_t(perm | PTE_V | PTE_A | PTE_D)
 		if a == last {
 			break
 		}
