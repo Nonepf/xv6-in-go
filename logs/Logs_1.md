@@ -63,6 +63,7 @@ void runtime_abort();
 	C OK
 	RPF: Hello, world!
 
+---
 ## Log 02: printf
 ### 实验目标
 - 实现一个符合直觉的printf函数
@@ -115,6 +116,7 @@ func KMain() {
 	Today is Monday
 	, M 9 100 %x
 
+---
 ## Log 03: kalloc
 ### 实验目标
 - 使用分页管理物理内存
@@ -207,6 +209,7 @@ func kallocTest() {
 - 完成自旋锁机制
 - 替换当前的`bottom`, `top`设计，改用更加结构化的设计
 
+---
 ## Log 04: memorylayout
 ### 主要内容
 - 将 xv6 中的`memlayout.h` 迁移到了Go
@@ -217,6 +220,7 @@ func kallocTest() {
 - `const`定义的数值不占用实际空间，和C的宏定义很像
 - 尽量不要在全局就给变量赋值（如本次修改`kalloc.go`时发现在全局给`BSS_END`赋值会导致其值为`0`）
 
+---
 ## Log 05: page tables
 ### 实验目标
 - 简单实现操作系统的三级页表机制

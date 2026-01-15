@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stddef.h>
+#include "riscv.h"
 
 typedef long int ssize_t;
 
@@ -39,11 +40,29 @@ void runtime_abort() {
 
 // transmission layer
 void c_start() {
+    // set to s-mode
+    unsigned long x = r_mstatus();
+    x &= ~MSTATUS_MPP_MASK;
+    x |= MSTATUS_MPP_S;
+    w_mstatus(x);
+
+    // M Exception Counter
     extern void KMain();
-    
+    w_mepc((uint64)KMain);
+
+    // disable paging
+    w_satp(0);
+
+    // delegate all to s-mode
+    w_medeleg(0xffff);
+    w_mideleg(0xffff);
+    w_sie(r_sie() | SIE_SEIE | SIE_STIE | SIE_SSIE);
+
+    w_pmpaddr0(0x3fffffffffffffull);
+    w_pmpcfg0(0xf);
+
     uart_putc('C'); uart_putc(' '); uart_putc('O'); uart_putc('K'); uart_putc('\n');
-    
-    KMain();
+    asm volatile("mret");
 }
 
 // abort
@@ -62,7 +81,7 @@ unsigned long kernel_pagetable;
 
 void kvminithart() {
     // Sv39 mode + Physical Page Number
-    uint64_t x = (8L << 60) | (((uint64_t)kernel_pagetable) >> 12);
-    asm volatile("csrw satp, %0" : : "r" (x));
-    asm volatile("sfence.vma zero, zero");
+    uint64_t x = SATP_SV39 | (((uint64_t)kernel_pagetable) >> 12);
+    w_satp(x);
+    sfence_vma();
 }

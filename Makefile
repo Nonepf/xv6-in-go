@@ -8,7 +8,7 @@ TARGET = kernel-qemu
 BUILD_DIR = build
 
 # settings
-CFLAGS = -march=rv64imac_zicsr -mabi=lp64 -mcmodel=medany -ffreestanding -nostdlib -O2 
+CFLAGS = -march=rv64imac_zicsr -mabi=lp64 -mcmodel=medany -ffreestanding -nostdlib -O2 -g
 TINYGO_FLAGS = -target=./scripts/riscv64-bare.json
 
 # object files
