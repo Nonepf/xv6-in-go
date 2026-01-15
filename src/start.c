@@ -2,6 +2,12 @@
 #include <stddef.h>
 #include "riscv.h"
 #include "output.h"
+#include "memlayout.h"
+
+extern void timervec();
+void timerinit();
+
+uint64 timer_scratch[5];
 
 // transmission layer
 void c_start() {
@@ -26,8 +32,24 @@ void c_start() {
     w_pmpaddr0(0x3fffffffffffffull);
     w_pmpcfg0(0xf);
 
+    timerinit();
+
     uart_putc('C'); uart_putc(' '); uart_putc('O'); uart_putc('K'); uart_putc('\n');
     asm volatile("mret");
 }
 
+// initialize timer interrupts
+void timerinit() {
+    int interval = 1000000; // cycles
+    
+    *(uint64*)CLINT_MTIMECMP = *(uint64*)CLINT_MTIME + interval;
 
+    uint64 *scratch = timer_scratch;
+    scratch[3] = CLINT_MTIMECMP;
+    scratch[4] = interval;
+    w_mscratch((uint64)scratch);
+
+    w_mtvec((uint64)timervec);
+    w_mstatus(r_mstatus() | MSTATUS_MIE);
+    w_mie(r_mie() | MIE_MTIE);
+}

@@ -1,5 +1,7 @@
 package main
 
+import _ "unsafe"
+
 const PGSIZE = uintptr(4096)
 const MAXVA = uintptr(1) << 38
 

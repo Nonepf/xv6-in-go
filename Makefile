@@ -23,6 +23,7 @@ DYNAMIC_C_OBJS = $(patsubst src/%.c, $(BUILD_DIR)/%.o, $(C_SOURCES))
 # 3. 汇总所有 Object 文件：
 # 保留原有的 entry.o 和 main.o，并自动加入后续新增的所有 C 模块
 OBJS = $(BUILD_DIR)/entry.o \
+	   $(BUILD_DIR)/kernelvec.o \
        $(BUILD_DIR)/main.o  \
        $(DYNAMIC_C_OBJS)
 
@@ -35,6 +36,10 @@ $(BUILD_DIR):
 
 # entry: 引导汇编，通常位置比较固定
 $(BUILD_DIR)/entry.o: kernel/entry.S | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# kernelvec
+$(BUILD_DIR)/kernelvec.o: kernel/kernelvec.S | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # compile c files: 统一处理 src/ 下的所有 C 源文件

@@ -125,3 +125,28 @@ Go中定义的kernel_pagetable的值似乎并没有同步到C中！
 - goc.c: Go无法调用底层的地方，由C代替
 - runtime.c: 欺骗Go的Runtime，让它以为自己运行在操作系统之上
 - start.c: 启动入口，之后跳到KMain
+
+---
+## Log 09: 时钟中断
+### 实验目标
+- 实现时钟中断的处理，使得每个一段时间打印一个`tick`（这是后面多任务调度的基础）
+
+### 实验思路
+首先我们来看看整体时钟中断过程的全貌：
+
+系统启动阶段，`timerinit`函数设置`CLINT_MTIMECMP`, `interval`等中断信息，设置`mtevc`存储 M-Mode 中断处理代码的位置，然后启用中断。
+
+当时钟到点了（`CLINT_MTIMECMP == CLINT_MTIME`），启动M-Mode中断，CPU升至M-Mode，读取`mtevc`指向位置（`timervec`），然后跳转。
+
+`timervec`负责重置下一个中断的时间点，并设置`sip`位，提示有S-Mode的中断待处理，然后`mret`返回。
+
+`mret`读取`mepc`中的数据，即CPU被打断前的pc位置，然后返回至该位置。但由于`sip`不为`0`，又有新的S-Mode中断需要处理，此时CPU再跳转到`stevc`所处的位置。（即`kernelvec`，非直接`trap`处理函数，因为需要处理寄存器相关内容）
+
+跳转后，`kernelvec`负责备份寄存器的值，然后调用我们的`kerneltrap`处理程序。程序返回后，再恢复，之后`sret`回到之前的状态，即操作系统的正常工作流程状态。
+
+这就是整个时钟中断处理的全貌。
+
+### 坑
+整个板块实现了，但是似乎并没有触发中断。
+
+后面找了半天，才发现没有打开S-Mode的中断。（xv6是在scheduler中打开的，所以我没有注意到）

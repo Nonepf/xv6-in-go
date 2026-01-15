@@ -9,7 +9,7 @@ uintptr_t get_end(void) { return (uintptr_t)end; }
 extern char etext[];
 uintptr_t get_etext(void) { return (uintptr_t)etext; }
 
-//vm support
+// vm support
 unsigned long kernel_pagetable;
 
 void kvminithart(uint64_t kernel_pagetable) {
@@ -17,4 +17,12 @@ void kvminithart(uint64_t kernel_pagetable) {
     uint64_t x = SATP_SV39 | (((uint64_t)kernel_pagetable) >> 12);
     w_satp(x);
     sfence_vma();
+}
+
+// trap support
+
+void trapinithart() {
+    extern void kernelvec();
+    w_stvec((uint64)kernelvec);
+    intr_on();
 }

@@ -16,6 +16,10 @@ func KMain() {
 	kvminithart(kernel_pagetable)
 	printf("OK\n")
 
+	printf("trapinithart...  ")
+	trapinithart()
+	printf("OK\n")
+
 	printfTest()
 	kallocTest()
     for {}
