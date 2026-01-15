@@ -114,3 +114,14 @@ Go中定义的kernel_pagetable的值似乎并没有同步到C中！
     C OK
     ......
     allocate 130660 KB memory
+
+---
+## Log 08: C 代码架构优化
+### 整体内容
+- 将init.c分为小文件，提高可读性
+
+### 细节
+分为了三个部分：
+- goc.c: Go无法调用底层的地方，由C代替
+- runtime.c: 欺骗Go的Runtime，让它以为自己运行在操作系统之上
+- start.c: 启动入口，之后跳到KMain
