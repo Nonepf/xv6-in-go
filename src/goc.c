@@ -26,3 +26,16 @@ void trapinithart() {
     w_stvec((uint64)kernelvec);
     intr_on();
 }
+
+// spinlock support
+int sync_test_and_set(volatile int *addr) {
+    return __sync_lock_test_and_set(addr, 1);
+}
+
+void sync_barrier() {
+    __sync_synchronize();
+}
+
+void sync_release(volatile int *addr) {
+    __sync_lock_release(addr);
+}

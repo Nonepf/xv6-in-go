@@ -67,7 +67,7 @@ w_sstatus(uint64 x)
 }
 
 // Supervisor Interrupt Pending
-static inline uint64
+uint64
 r_sip()
 {
   uint64 x;
@@ -75,7 +75,7 @@ r_sip()
   return x;
 }
 
-static inline void 
+void 
 w_sip(uint64 x)
 {
   asm volatile("csrw sip, %0" : : "r" (x));
@@ -278,14 +278,14 @@ r_time()
 }
 
 // enable device interrupts
-static inline void
+void
 intr_on()
 {
   w_sstatus(r_sstatus() | SSTATUS_SIE);
 }
 
 // disable device interrupts
-static inline void
+void
 intr_off()
 {
   w_sstatus(r_sstatus() & ~SSTATUS_SIE);

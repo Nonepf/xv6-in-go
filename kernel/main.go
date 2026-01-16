@@ -2,6 +2,13 @@ package main
 
 import _ "unsafe"
 
+type Counter struct {
+	lock spinlock
+	num  int
+}
+var count Counter
+var addLimit int 
+
 //export KMain
 func KMain() {
 	printf("kmeminit... ")
@@ -16,13 +23,18 @@ func KMain() {
 	kvminithart(kernel_pagetable)
 	printf("OK\n")
 
+	addLimit = 0
+	printf("initlock...")
+	initlock(&count.lock)
+	printf("OK\n")
+
 	printf("trapinithart...  ")
 	trapinithart()
 	printf("OK\n")
 
-	printfTest()
-	kallocTest()
-    for {}
+	//printfTest()
+	//kallocTest()
+	spinlockTest()
 }
 
 func printfTest() {
@@ -44,7 +56,25 @@ func kallocTest() {
 		count++
 	}
 	printf("allocate %d KB memory\n", int(count * 4))
+}
 
+func spinlockTest() {
+	printf("--- spinlock test ---\n")
+	for i := 0; i < 1000; i++ {
+		for i := 0; i < 100000; i++ {
+			printf("")
+		}
+		acquire(&count.lock)
+		count.num++
+		release(&count.lock)
+	}
+	printf("Current Count: %d\n", count.num)
+	for addLimit < 1000 {
+		for i := 0; i < 100000; i++ {
+			printf("")
+		}
+	}
+	printf("Expected Count: 2000, Real Count: %d\n", count.num)
 }
 
 func main() {}

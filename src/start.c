@@ -40,7 +40,7 @@ void c_start() {
 
 // initialize timer interrupts
 void timerinit() {
-    int interval = 1000000; // cycles
+    int interval = 100000; // cycles
     
     *(uint64*)CLINT_MTIMECMP = *(uint64*)CLINT_MTIME + interval;
 

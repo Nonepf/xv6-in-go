@@ -25,3 +25,15 @@ func PA2PTE(pa uintptr) pte_t { return pte_t((pa >> 12) << 10) }
 
 //func PGGROUNDDOWN(a uintptr) uintptr { return a - a % PGSIZE }
 func PGGROUNDDOWN(a uintptr) uintptr { return a & ^(PGSIZE - 1) }
+
+//go:linkname intr_on intr_on
+func intr_on()
+
+//go:linkname intr_off intr_off
+func intr_off()
+
+//go:linkname r_sip r_sip
+func r_sip() uintptr
+
+//go:linkname w_sip w_sip
+func w_sip(x uintptr)

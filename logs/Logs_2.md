@@ -150,3 +150,155 @@ Go中定义的kernel_pagetable的值似乎并没有同步到C中！
 整个板块实现了，但是似乎并没有触发中断。
 
 后面找了半天，才发现没有打开S-Mode的中断。（xv6是在scheduler中打开的，所以我没有注意到）
+
+---
+## Log 10: Spinlock
+### 实验目标
+- 实现自旋锁（内容不必过多展开，和xv6的自旋锁一样）
+
+### 实现与测试思路
+在这里复现一下锁的简化运行流程。注意，我们此时没有多进程的概念，因此测试锁时只能用中断来制造一种“伪并发”（虽然这个测试并不能完全保证锁的正确性）。我们创建一个含锁的`count`结构体，分别在`KMain`与中断处理程序中执行`count.num++`。
+
+`KMain`在中断处理初始化前执行`initlock(count.lock)`。随即中断打开。
+
+`KMain`进入一个固定次数（如`10000`）的循环，每次`aquire(count.lock)`，然后`count.num++`，之后`release(count.lock)`。中断执行一样的`aquire`，`release`，不过总的次数受某个独立值约束（如`addLimit := 1000`）。等待足够长的时间后，输出总值。
+
+`acquire`的设计：首先需要关闭中断，防止死锁，接着进入循环等待锁被腾出，锁被腾出后，立即设置锁的状态被锁定，然后返回。
+
+`release`的设计：将锁的状态设定为未锁定，然后返回。
+
+另外注意，C 中`static` `inline`的关键字可能会使将定义的函数优化掉，使Go识别不到定义的函数。（原`riscv.h`中的`intr_on`与`intr_off`）
+
+### 初次实现
+这是一个非常朴素的想法，但存在严重的漏洞：
+```go
+type spinlock struct {
+	locked bool
+}
+
+func initlock(lk *spinlock) {
+	lk.locked = false
+}
+
+func acquire(lk *spinlock) {
+	intr_off()
+	for lk.locked {}
+	lk.locked = true;
+}
+
+func release(lk *spinlock) {
+	lk.locked = false
+	intr_on()
+}
+```
+
+加入打印语句调试，发现这样的情况：
+
+    acquire.acquire... OK
+    release... acquire... OK
+
+非常有趣，一个进程正在执行`acquire`，但连打印语句都还没执行完，CPU就被另一个进程抢去了，它执行到`release`，`OK`都还没打印，又有另一个进程来`acquire`了。
+
+### 修改方案
+我们不得不摒弃之前的朴素想法，必须将整个`acquire`/`release`过程原子化地执行下去，而不能有打断。我们转向xv6的`spinlock.c`中的巧妙设计。
+
+`spinlock.c`中使用了C编译器特有的`__sync_lock_test_and_set`等指令保证原子化，我们在Go中通过`goc.c`进行复用。如下：
+
+```go
+func acquire(lk *spinlock) {
+	intr_off()
+	printf("acquire... ")
+	for sync_test_and_set(&lk.locked) == 1 {}
+	sync_barrier()
+	printf("OK\n")
+}
+
+func release(lk *spinlock) {
+	printf("release... ")
+	sync_release(&lk.locked)
+	printf("OK\n")
+	intr_on()
+}
+```
+
+现在似乎可以整齐打印`acquire`与`release`了，但是突然发现`KMain`在打印了几十行后就再也不见了。
+
+完善调试信息，发现，这种原因并不是卡在`KMain`的无限循环了。当`KMain`执行完`count.num++`后，反复地发生中断，根本没有`KMain`执行的机会。
+
+难道是`trap`异常，不能返回到原函数？确实很可能，我们没有清除`sip`位，可能会导致一直中断，完成下面一行代码来补救：
+```go
+w_sip(r_sip() & ^uintptr(2))
+```
+
+下面的测试表明修正成功了：
+```go
+for {
+	for i := 0; i < 1000000; i++ {
+		printf("")
+	}
+	printf("back\n")
+}
+```
+
+    ...
+    tick
+    back
+    tick
+    back
+    back
+    tick
+    back
+    tick
+    back
+    back
+    tick
+    ....
+
+另外，调试输出的打印时间过长也很可能导致一个中断结束，另一个中断又开始了，因此先去除调试输出。
+
+反复修改无果后，最后发现了一个关键之处：
+```go
+	w_sip(r_sip() & ^uintptr(2))
+```
+这个语句的位置很重要！将它放在`Kerneltrap`函数开头，就解决了之前的问题。
+
+### 效果
+测试程序：
+```go
+func spinlockTest() {
+	printf("--- spinlock test ---\n")
+	for i := 0; i < 1000; i++ {
+		for i := 0; i < 100000; i++ {
+			printf("")
+		}
+		acquire(&count.lock)
+		count.num++
+		release(&count.lock)
+	}
+	printf("Current Count: %d\n", count.num)
+	for addLimit < 1000 {
+		for i := 0; i < 1000000; i++ {
+			printf("")
+		}
+		printf("Waiting... current addLimit: %d\n", addLimit)
+	}
+	printf("Expected Count: 2000, Real Count: %d\n", count.num)
+}
+```
+
+`trap.go`中相应部分：
+```go
+func Kerneltrap() {
+	w_sip(r_sip() & ^uintptr(2))
+	if addLimit < 1000 {
+		acquire(&count.lock)
+		count.num++
+		addLimit++
+		release(&count.lock)
+	}
+}
+```
+
+    Expected Count: 2000, Real Count: 2000
+
+（不过关闭锁的情况下，也没有出错的情况...）
