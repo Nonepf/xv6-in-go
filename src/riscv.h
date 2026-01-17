@@ -126,7 +126,7 @@ w_sepc(uint64 x)
   asm volatile("csrw sepc, %0" : : "r" (x));
 }
 
-static inline uint64
+uint64
 r_sepc()
 {
   uint64 x;
@@ -236,7 +236,7 @@ w_mscratch(uint64 x)
 }
 
 // Supervisor Trap Cause
-static inline uint64
+uint64
 r_scause()
 {
   uint64 x;

@@ -23,18 +23,18 @@ func KMain() {
 	kvminithart(kernel_pagetable)
 	printf("OK\n")
 
-	addLimit = 0
-	printf("initlock...")
-	initlock(&count.lock)
+	printf("procinit...  ")
+	procinit()
 	printf("OK\n")
 
 	printf("trapinithart...  ")
 	trapinithart()
 	printf("OK\n")
 
-	//printfTest()
-	//kallocTest()
-	spinlockTest()
+	_ = TaskStub
+	schedTest()
+
+	scheduler()
 }
 
 func printfTest() {
@@ -76,5 +76,43 @@ func spinlockTest() {
 	}
 	printf("Expected Count: 2000, Real Count: %d\n", count.num)
 }
+
+func schedTest() {
+	printf("--- scheduler test ---\n")
+	allocProc(printA)
+	allocProc(printB)
+	allocProc(printC)
+}
+
+func printA() {
+	for {
+		printf("A\n")
+		count := 0
+		for i := 0; i < 1000000; i++ {
+			count += i
+		}
+	}
+}
+
+func printB() {
+	for {
+		printf("B\n")
+		count := 0
+		for i := 0; i < 1000000; i++ {
+			count += i
+		}
+	}
+}
+
+func printC() {
+	for {
+		printf("C\n")
+		count := 0
+		for i := 0; i < 1000000; i++ {
+			count += i
+		}
+	}
+}
+
 
 func main() {}

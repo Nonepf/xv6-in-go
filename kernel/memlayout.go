@@ -62,7 +62,7 @@ const (
 
 // map the trampoline page to the highest address,
 // in both user and kernel space.
-//const TRAMPOLINE = MAXVA - PGSIZE
+const TRAMPOLINE = MAXVA - PGSIZE
 
 // map kernel stacks beneath the trampoline,
 // each surrounded by invalid guard pages.

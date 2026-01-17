@@ -37,3 +37,9 @@ func r_sip() uintptr
 
 //go:linkname w_sip w_sip
 func w_sip(x uintptr)
+
+//go:linkname r_scause r_scause
+func r_scause() uintptr
+
+//go:linkname r_sepc r_sepc
+func r_sepc() uintptr

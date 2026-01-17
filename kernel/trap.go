@@ -9,10 +9,17 @@ func trapinithart()
 //export Kerneltrap
 func Kerneltrap() {
 	w_sip(r_sip() & ^uintptr(2))
-	if addLimit < 1000 {
-		//acquire(&count.lock)
-		count.num++
-		addLimit++
-		//release(&count.lock)
-	}
+
+    scause := r_scause()
+	sepc := r_sepc()
+
+	// timer interrupt
+    if scause == 0x8000000000000005 || scause == 0x8000000000000001 {
+        if current_proc != nil && current_proc.state == RUNNING {
+            yield(current_proc)
+        }
+    } else {
+        printf("Kerneltrap %x at %x\n", scause, sepc)
+        for {}
+    }
 }

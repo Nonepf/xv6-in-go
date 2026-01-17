@@ -24,7 +24,6 @@ void kvminithart(uint64_t kernel_pagetable) {
 void trapinithart() {
     extern void kernelvec();
     w_stvec((uint64)kernelvec);
-    intr_on();
 }
 
 // spinlock support
