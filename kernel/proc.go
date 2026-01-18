@@ -136,8 +136,8 @@ found:
 //export TaskStub
 func TaskStub() {
     release(&current_proc.lock)
-    intr_on()
     printf("STUB START\n")
+    intr_on()
     if current_proc.task != nil {
         current_proc.task()
     }
