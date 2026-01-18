@@ -104,8 +104,8 @@ func yield(p *KProc) {
     release(&p.lock)
 }
 
-//go:linkname forkret_asm_addr forkret_asm
-var forkret_asm_addr byte
+//go:linkname GetTaskStubAddr GetTaskStubAddr
+func GetTaskStubAddr() uintptr
 
 func allocProc(fun func()) *KProc {
     var p *KProc
@@ -123,10 +123,7 @@ found:
     p.pid = 0   // Not implemented yet
     p.state = RUNNABLE
     p.task = fun
-
-    p.context.ra = uintptr(0x80000d6a)
-    printf("DEBUG: Hardcoded ra = %x\n", p.context.ra)
-
+    p.context.ra = GetTaskStubAddr()
     p.context.sp = p.kstack + PGSIZE
 
     release(&p.lock)

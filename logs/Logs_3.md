@@ -194,3 +194,25 @@ func schedTest() {
 `scheduler`申请锁，发现`A`，于是切换上下文，此时进入`yield`上次的位置，释放锁（释放`scheduler`申请的锁），然后继续，从中断处理程序返回`A`。
 
 整体而言，锁的申请与释放是合理的。
+
+## Log 13: `TaskStub`地址传参优化
+### 问题描述
+- 之前采用硬编码的形式让程序跑起来了，这次动态获取`TaskStub`函数的地址，然后调用。
+
+### 解决方案
+之前尝试过在 Go 中直接取地址，失败。后面发现了一种行之有效的办法：
+
+在`swtch.S`中加一段：
+```asm
+.global GetTaskStubAddr
+GetTaskStubAddr:
+    la a0, TaskStub 
+    ret
+```
+
+在`proc.c`中：
+```go
+//go:linkname GetTaskStubAddr GetTaskStubAddr
+func GetTaskStubAddr() uintptr
+```
+后面直接根据这个函数接口获取TaskStub地址即可

@@ -37,10 +37,7 @@ swtch:
         
         ret
 
-.section .text
-.global forkret_asm
-.align 2
-forkret_asm:
-    call TaskStub
-    
-    1: j 1b
+.global GetTaskStubAddr
+GetTaskStubAddr:
+    la a0, TaskStub 
+    ret
