@@ -18,7 +18,7 @@ func kvminit() {
 	kvmmap(PLIC, PLIC, 0x400000, PTE_R | PTE_W)
 	kvmmap(KERNBASE, KERNBASE, get_etext() - KERNBASE, PTE_R | PTE_X)
 	kvmmap(get_etext(), get_etext(), PHYSTOP - get_etext(), PTE_R | PTE_W)
-	//kvmmap(TRAMPOLINE)
+	kvmmap(TRAMPOLINE, get_trampoline(), PGSIZE, PTE_R | PTE_X)
 }
 
 //go:linkname kvminithart kvminithart
@@ -82,4 +82,21 @@ func mappages(pagetable pagetable_t, va uintptr, size uintptr, pa uintptr, perm 
 		pa += PGSIZE
 	}
 	return 0
+}
+
+func uvminit(pagetable pagetable_t, src uintptr, sz uintptr) {
+	if (sz >= PGSIZE) {
+		panic("uvminit: more than a page")
+	}
+
+	mem := kalloc()
+	memset(mem, 0, uint(PGSIZE))
+	mappages(pagetable, 0, PGSIZE, mem, PTE_W | PTE_R | PTE_X | PTE_U)
+	memmove(mem, src, sz)
+}
+
+func uvmcreate() pagetable_t {
+	pagetable := pagetable_t(kalloc())
+	memset(uintptr(pagetable), 0, uint(PGSIZE))
+	return pagetable
 }

@@ -30,10 +30,9 @@ func KMain() {
 	printf("trapinithart...  ")
 	trapinithart()
 	printf("OK\n")
-
-	_ = TaskStub
-	schedTest()
-
+	
+	printfTest()
+	
 	scheduler()
 }
 
@@ -77,12 +76,12 @@ func spinlockTest() {
 	printf("Expected Count: 2000, Real Count: %d\n", count.num)
 }
 
-func schedTest() {
-	printf("--- scheduler test ---\n")
-	allocProc(printA)
-	allocProc(printB)
-	allocProc(printC)
-}
+//func schedTest() {
+//	printf("--- scheduler test ---\n")
+//	allocProc(printA)
+//	allocProc(printB)
+//	allocProc(printC)
+//}
 
 func printA() {
 	for {

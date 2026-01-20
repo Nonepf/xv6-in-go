@@ -36,8 +36,3 @@ swtch:
         ld gp, 112(a1)
         
         ret
-
-.global GetTaskStubAddr
-GetTaskStubAddr:
-    la a0, TaskStub 
-    ret

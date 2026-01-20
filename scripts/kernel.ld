@@ -4,15 +4,38 @@ ENTRY(_entry)
 SECTIONS { 
     . = 0x80000000; 
 
-   .text : {
+    .text : {
         *(.text .text.*)
         . = ALIGN(4096);
-        etext = .;
+        PROVIDE(etext = .);
+    }
+
+    . = ALIGN(4096);
+    .trampoline : {
+        *(trampsec)
+    }
+    . = ALIGN(4096);
+    PROVIDE(trampoline_end = .);
+
+    .rodata : {
+        *(.rodata .rodata.*)
+    }
+
+    .data : {
+        *(.data .data.*)
+    }
+
+    . = ALIGN(4096);
+    .user_init : {
+        PROVIDE(user_proc_start = .);
+        *(.user_code)        
+        . = ALIGN(4096);
+        PROVIDE(user_proc_end = .);
     }
 
     .bss : {
         *(.bss .bss.*)
         . = ALIGN(4096);
-        end = .;
+        PROVIDE(end = .);
     }
 }

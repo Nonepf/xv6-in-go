@@ -52,7 +52,7 @@ w_mepc(uint64 x)
 #define SSTATUS_SIE (1L << 1)  // Supervisor Interrupt Enable
 #define SSTATUS_UIE (1L << 0)  // User Interrupt Enable
 
-static inline uint64
+uint64
 r_sstatus()
 {
   uint64 x;
@@ -60,7 +60,7 @@ r_sstatus()
   return x;
 }
 
-static inline void 
+void 
 w_sstatus(uint64 x)
 {
   asm volatile("csrw sstatus, %0" : : "r" (x));
@@ -120,7 +120,7 @@ w_mie(uint64 x)
 // machine exception program counter, holds the
 // instruction address to which a return from
 // exception will go.
-static inline void 
+void 
 w_sepc(uint64 x)
 {
   asm volatile("csrw sepc, %0" : : "r" (x));
@@ -166,7 +166,7 @@ w_mideleg(uint64 x)
 
 // Supervisor Trap-Vector Base Address
 // low two bits are mode.
-static inline void 
+void 
 w_stvec(uint64 x)
 {
   asm volatile("csrw stvec, %0" : : "r" (x));
@@ -214,7 +214,7 @@ w_satp(uint64 x)
   asm volatile("csrw satp, %0" : : "r" (x));
 }
 
-static inline uint64
+uint64
 r_satp()
 {
   uint64 x;

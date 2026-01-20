@@ -25,6 +25,9 @@ DYNAMIC_C_OBJS = $(patsubst src/%.c, $(BUILD_DIR)/%.o, $(C_SOURCES))
 OBJS = $(BUILD_DIR)/entry.o \
 	   $(BUILD_DIR)/kernelvec.o \
 	   $(BUILD_DIR)/swtch.o \
+	   $(BUILD_DIR)/stubs.o \
+	   $(BUILD_DIR)/trampoline.o \
+	   $(BUILD_DIR)/initcode.o \
        $(BUILD_DIR)/main.o  \
        $(DYNAMIC_C_OBJS)
 
@@ -45,6 +48,18 @@ $(BUILD_DIR)/kernelvec.o: kernel/kernelvec.S | $(BUILD_DIR)
 
 # swtch
 $(BUILD_DIR)/swtch.o: kernel/swtch.S | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# initcode
+$(BUILD_DIR)/initcode.o: kernel/initcode.S | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# stubs
+$(BUILD_DIR)/stubs.o: kernel/stubs.S | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# trampoline
+$(BUILD_DIR)/trampoline.o: kernel/trampoline.S | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # compile c files: 统一处理 src/ 下的所有 C 源文件
