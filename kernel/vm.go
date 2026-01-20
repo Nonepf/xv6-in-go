@@ -85,7 +85,7 @@ func mappages(pagetable pagetable_t, va uintptr, size uintptr, pa uintptr, perm 
 }
 
 func uvminit(pagetable pagetable_t, src uintptr, sz uintptr) {
-	if (sz >= PGSIZE) {
+	if (sz > PGSIZE) {
 		panic("uvminit: more than a page")
 	}
 

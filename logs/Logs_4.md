@@ -1,5 +1,4 @@
 ## Log 14 - 1: 用户态 准备
-
 ### 整体实验目标
 - 初步实现从内核态跳到用户态这个过程，然后陷入循环。（还没实现系统调用，无法打印结果，只能先用 `gdb` 来看看成果了）
 
@@ -129,3 +128,126 @@ GetUsertrapAddr:
 另外，Go 的强类型检查还是有点烦，需要多加注意。
 
 ---
+## Log 14 - 2: 用户态 进入
+### 实验目标
+- 我们利用之前搭建好的工具，首次进入用户态系统（然后暂且卡在无限循环之中）
+
+### 具体实现
+突然发现似乎没有什么要特别做的...... 只需要在`KMain` 加上 `userinit` 就可以了。后面全是漫长的 Debug 环节.
+
+首先，修复掉加上 `userinit` 后带来的编译错误，然后分析以下错误的原因：
+
+	trapinithart...  OK
+	userinit...  mappages 0x3ffffff000, 0x80002000
+	mappages 0x3fffffe000, 0x87faf000
+	Kerneltrap 0xc at 0x80002112
+
+使用 `printf` 溯源，最后发现，`GetForkretAddr` 跟在 `trampoline` 后面，根本没有执行权限，放在其他地方就好了（不过很奇怪，`trampoline` 那个段在映射时不是有权限吗？）
+
+还有这里条件苛刻了，本来就会对齐为一个 `PGSIZE`:
+```go
+if (sz > PGSIZE) {
+		panic("uvminit: more than a page")
+	}
+```
+
+搞掉了这个bug，继续，发现卡住了？使用gdb不断追踪，追踪到这个位置：
+
+	(gdb) x/5i 0x3ffffff090
+	   0x3ffffff090:        unimp
+	   0x3ffffff092:        unimp
+	   0x3ffffff094:        unimp
+	   0x3ffffff096:        unimp
+	   0x3ffffff098:        unimp
+
+程序先跳到 `0x3ffffff090`,后面直接卡住. 查看字节编码，的确是有问题的：
+
+	(gdb) x/100xb 0x3ffffff000
+	0x3ffffff000:   0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00
+	0x3ffffff008:   0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00
+	0x3ffffff010:   0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00
+	0x3ffffff018:   0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00
+	0x3ffffff020:   0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00
+	0x3ffffff028:   0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00
+	0x3ffffff030:   0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00
+	0x3ffffff038:   0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00
+	0x3ffffff040:   0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00
+	0x3ffffff048:   0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00
+	0x3ffffff050:   0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00
+	0x3ffffff058:   0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00
+	0x3ffffff060:   0x00    0x00    0x00    0x00
+
+很有可能是没有正确映射，后检测原地址 `0x80002090`，同样也是全零。因此问题不在于这里。
+
+后面检测编译后的文件，发现：
+
+	  1 .trampsec     00000112  0000000080002000  0000000080002000  00005000  2**4
+	                  CONTENTS, READONLY
+推测由于是 `READONLY`，因而会在加载时被优化掉，不加载。后在 `trampoline` 中修改：
+```asm
+.section .trampsec, "ax", %progbits
+```
+让编译器不要优化。
+
+修改后，确实有成效：
+
+	(gdb) x/5i 0x0000003ffffff000
+	=> 0x3ffffff000:        csrrw   a0,sscratch,a0
+	   0x3ffffff004:        sd      ra,40(a0)
+	   0x3ffffff008:        sd      sp,48(a0)
+	   0x3ffffff00c:        sd      gp,56(a0)
+	   0x3ffffff010:        sd      tp,64(a0)
+
+但还是卡住了。反复定位到了这个位置：
+
+	(gdb) x/20i 0x3ffffff10e
+	=> 0x3ffffff10e:        sret
+
+执行后，出现故障，跳回到 `0x3ffffff000` 这个地方。
+
+我们在 `sret` 前执行检查：
+
+	(gdb) p/x $sstatus
+	$1 = 0x200000020
+	(gdb) set $sstatus |= 0x40000
+	(gdb) x/5i 0x0
+	   0x0: j       0x0
+	   0x2: unimp
+	   0x4: unimp
+	   0x6: unimp
+	   0x8: unimp
+
+。。。
+
+不知过了多久，终于发现风险点——中断开关！我还没有实现用户态的中断处理，这里应该关掉！
+
+修改后，终于可以运行了......
+
+### 效果
+
+	(gdb) target remote localhost:1234
+	Remote debugging using localhost:1234
+	0x0000000000001000 in ?? ()
+	(gdb) c
+	Continuing.
+	^C
+	Program received signal SIGINT, Interrupt.
+	0x0000000000000000 in ?? ()
+	(gdb) si
+	0x0000000000000004 in ?? ()
+	(gdb) si
+	0x0000000000000000 in ?? ()
+	(gdb) x/5i $pc
+	=> 0x0: li      a0,291
+	   0x4: j       0x0
+	   0x6: unimp
+	   0x8: unimp
+	   0xa: unimp
+	(gdb)
+
+### 补充
+（Gemini生成）再次明晰 `sie`，`sip`，`sstatus`的职责
+
+- **`sie` (Supervisor Interrupt Enable)**：**“准入清单”**。 它决定了**哪些种类**的中断是被允许的（比如时钟中断、外部设备中断）。即使有人敲门，如果它不在 `sie` 的清单上，安保理都不理。
+- **`sip` (Supervisor Interrupt Pending)**：**“待处理信封”**。 它是一个状态显示。如果某个中断发生了（比如闹钟响了），但 CPU 还没来得及处理，`sip` 对应的位就会亮起。它告诉你：“有一个中断正在门口等着呢。”
+- **`sstatus` (Supervisor Status)**：**“总闸 & 状态记录仪”**。 它里面的 `SIE` 位是**全局开关**。就算 `sie` 清单里允许了时钟中断，如果 `sstatus.SIE` 总闸是关的，所有的中断都进不来。

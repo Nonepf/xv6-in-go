@@ -76,3 +76,6 @@ func w_stvec(x uintptr)
 
 //go:linkname r_satp r_satp
 func r_satp() uintptr
+
+//go:linkname w_sie w_sie
+func w_sie(x uintptr) 

@@ -1,6 +1,6 @@
 # a copy from xv6
 
-.section trampsec
+.section .trampsec, "ax", %progbits
 .global trampoline
 trampoline:
 .align 4
@@ -121,13 +121,3 @@ userret:
         # return to user mode and user pc.
         # usertrapret() set up sstatus and sepc.
         sret
-
-.global GetForkretAddr
-GetForkretAddr:
-    la a0, Forkret 
-    ret
-
-.global GetUsertrapAddr
-GetUsertrapAddr:
-    la a0, Usertrap 
-    ret

@@ -93,7 +93,7 @@ r_sie()
   return x;
 }
 
-static inline void 
+void 
 w_sie(uint64 x)
 {
   asm volatile("csrw sie, %0" : : "r" (x));

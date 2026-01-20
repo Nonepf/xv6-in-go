@@ -36,3 +36,13 @@ swtch:
         ld gp, 112(a1)
         
         ret
+
+.global GetForkretAddr
+GetForkretAddr:
+    la a0, Forkret 
+    ret
+
+.global GetUsertrapAddr
+GetUsertrapAddr:
+    la a0, Usertrap 
+    ret

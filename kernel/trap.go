@@ -55,9 +55,14 @@ func Usertrapret() {
     p.trapframe.kernel_trap = GetUsertrapAddr()
     p.trapframe.kernel_hartid = 0 // not implemented yet
 
+    intr_off() //
+    w_sie(0) //
+    w_sip(0) //
+
     x := r_sstatus()
     x &= ^SSTATUS_SPP
-    x |= SSTATUS_SPIE
+    //x |= SSTATUS_SPIE
+    x &= ^SSTATUS_SPIE //
     w_sstatus(x)
 
     w_sepc(p.trapframe.epc)
@@ -65,5 +70,6 @@ func Usertrapret() {
     satp := MAKE_SATP(p.pagetable)
     
     fn := TRAMPOLINE + (get_userret() - get_trampoline())
+    printf("fnnnnnnnnnn %x %x %x \n", uintptr(fn), get_userret(), get_trampoline())
     trampoline_call(fn, TRAPFRAME, satp)
 }

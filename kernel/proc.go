@@ -12,7 +12,7 @@ func get_initcode() uintptr
 //go:linkname get_user_proc_size get_user_proc_size
 func get_user_proc_size() uintptr
 
-//go:linkname GetForkretAddr GetForkretAddr()
+//go:linkname GetForkretAddr GetForkretAddr
 func GetForkretAddr() uintptr
 
 
@@ -180,9 +180,9 @@ found:
 
     p.pagetable = proc_pagetable(p)
     
-    p.context = Context{} // seem to be better way in Go
-    //memset(uintptr(unsafe.Pointer(&p.context)), 0, uintptr(unsafe.Sizeof(p.context)))
-
+    //p.context = Context{} // seem to be better way in Go
+    memset(uintptr(unsafe.Pointer(&p.context)), 0, uint(unsafe.Sizeof(p.context)))
+    
     p.context.ra = GetForkretAddr()
     p.context.sp = p.kstack + PGSIZE
     return p
@@ -218,6 +218,7 @@ func userinit() {
     var p *Proc
     p = allocproc()
 
+    printf("uvminit %x %x\n", get_initcode(), get_user_proc_size())
     uvminit(p.pagetable, get_initcode(), get_user_proc_size())
 
     p.trapframe.epc = 0

@@ -30,9 +30,12 @@ func KMain() {
 	printf("trapinithart...  ")
 	trapinithart()
 	printf("OK\n")
-	
-	printfTest()
-	
+
+	printf("userinit...  ")
+	userinit()
+	printf("OK\n")
+
+	printf("jump to scheduler...\n")
 	scheduler()
 }
 

@@ -11,8 +11,8 @@ SECTIONS {
     }
 
     . = ALIGN(4096);
-    .trampoline : {
-        *(trampsec)
+    .trampsec : {
+        *(.trampsec)
     }
     . = ALIGN(4096);
     PROVIDE(trampoline_end = .);
