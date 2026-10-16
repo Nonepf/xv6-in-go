@@ -1,15 +1,27 @@
 # tool chains
-TINYGO = tinygo
+# 支持环境变量或 make 命令行覆盖，例如：
+#   make CC=riscv64-linux-gnu-gcc LD=riscv64-linux-gnu-ld
+TINYGO ?= tinygo
+CC ?= riscv64-unknown-elf-gcc
+LD ?= riscv64-unknown-elf-ld
+# GNU Make 内置 CC=cc、LD=ld，?= 不会覆盖它们。
+ifeq ($(origin CC),default)
 CC = riscv64-unknown-elf-gcc
+endif
+ifeq ($(origin LD),default)
 LD = riscv64-unknown-elf-ld
+endif
+QEMU ?= qemu-system-riscv64
+PYTHON ?= python3
 
 # target
 TARGET = kernel-qemu
 BUILD_DIR = build
+INITCODE ?= kernel/initcode.S
 
 # settings
 # -march=rv64imac_zicsr: 包含原子指令(a)和控制状态寄存器(zicsr)，这对时钟中断至关重要
-CFLAGS = -march=rv64imac_zicsr -mabi=lp64 -mcmodel=medany -ffreestanding -nostdlib -O2 -g
+CFLAGS = -march=rv64imac_zicsr -mabi=lp64 -mcmodel=medany -ffreestanding -nostdlib -O2 -g -MMD -MP
 TINYGO_FLAGS = -target=./scripts/riscv64-bare.json
 
 # --- 核心改进区 ---
@@ -51,7 +63,7 @@ $(BUILD_DIR)/swtch.o: kernel/swtch.S | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # initcode
-$(BUILD_DIR)/initcode.o: kernel/initcode.S | $(BUILD_DIR)
+$(BUILD_DIR)/initcode.o: $(INITCODE) FORCE | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # stubs
@@ -82,10 +94,20 @@ $(TARGET): $(OBJS) scripts/kernel.ld
 
 # simulate
 qemu: $(TARGET)
-	qemu-system-riscv64 -machine virt -bios none -kernel $(TARGET) -m 128M -nographic
+	$(QEMU) -machine virt -bios none -kernel $(TARGET) -m 128M -nographic
+
+# debug: 启动 QEMU 并暂停，等待 gdb 连接（gdb-multiarch $(TARGET) -> target remote localhost:1234）
+debug: $(TARGET)
+	$(QEMU) -machine virt -bios none -kernel $(TARGET) -m 128M -nographic -s -S
+
+# 每个测试使用独立构建目录，不替换正常的 initcode 或 kernel-qemu。
+test:
+	QEMU="$(QEMU)" $(PYTHON) scripts/test-user.py
 
 # clean
 clean:
 	rm -rf $(BUILD_DIR) $(TARGET)
 
-.PHONY: all clean qemu
+-include $(wildcard $(BUILD_DIR)/*.d)
+
+.PHONY: all clean qemu debug test

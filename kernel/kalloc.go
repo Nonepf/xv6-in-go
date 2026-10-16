@@ -11,13 +11,13 @@ type run struct {
 
 type Kmem struct {
 	freelist *run
-	//lock	spinlock	
+	lock     spinlock
 }
 
 var kmem Kmem
 
 func kinit() {
-	// initlock(&kmem.lock, "kmem")
+	initlock(&kmem.lock)
 	var BSS_END uintptr = get_end()
 	printf("kinit: [%d, %d)\n", int(BSS_END), int(PHYSTOP))
 	freerange(BSS_END, PHYSTOP)
@@ -25,32 +25,33 @@ func kinit() {
 
 func freerange(pa_start uintptr, pa_end uintptr) {
 	printf("freerange: [%d, %d)\n", int(pa_start), int(pa_end))
-	for p := pa_start; p + PGSIZE <= pa_end; p += PGSIZE {
+	for p := pa_start; p+PGSIZE <= pa_end; p += PGSIZE {
 		kfree(p)
 	}
 }
 
 func kfree(pa uintptr) {
-	// kmem.lock.acquire()
-	// defer kmem.lock.acquire()
 	var BSS_END uintptr = get_end()
 
-	if pa % PGSIZE != 0 || pa < BSS_END || pa >= PHYSTOP {
+	if pa%PGSIZE != 0 || pa < BSS_END || pa >= PHYSTOP {
 		panic("kfree")
 	}
 
+	acquire(&kmem.lock)
 	r := (*run)(unsafe.Pointer(pa))
-	r.next = kmem.freelist;
-	kmem.freelist = r;
+	r.next = kmem.freelist
+	kmem.freelist = r
+	release(&kmem.lock)
 }
 
 func kalloc() uintptr {
-	// kmem.lock.acquire()
-	// defer kmem.lock.acquire()
-
+	acquire(&kmem.lock)
 	r := kmem.freelist
 	if r != nil {
 		kmem.freelist = r.next
+	}
+	release(&kmem.lock)
+	if r != nil {
 		return uintptr(unsafe.Pointer(r))
 	}
 	return 0

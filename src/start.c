@@ -27,7 +27,9 @@ void c_start() {
     // delegate all to s-mode
     w_medeleg(0xffff);
     w_mideleg(0xffff);
-    w_sie(r_sie() | SIE_SEIE | SIE_STIE | SIE_SSIE);
+    // timervec forwards the M-mode timer as an S-mode software interrupt.
+    // PLIC and direct supervisor timer interrupts are not implemented here.
+    w_sie(SIE_SSIE);
 
     w_pmpaddr0(0x3fffffffffffffull);
     w_pmpcfg0(0xf);

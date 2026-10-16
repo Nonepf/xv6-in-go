@@ -244,8 +244,8 @@ r_scause()
   return x;
 }
 
-// Supervisor Trap Value
-static inline uint64
+// Supervisor Trap Value (also called from Go)
+uint64
 r_stval()
 {
   uint64 x;
